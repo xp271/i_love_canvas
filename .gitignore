@@ -37,6 +37,9 @@ ENV/
 web_analys/output/
 logs/
 
+# Config files (may contain sensitive URLs)
+config.json
+
 # OS
 .DS_Store
 Thumbs.db

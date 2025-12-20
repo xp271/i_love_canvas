@@ -1,6 +1,6 @@
 {
   "target_urls": [
-    "https://sit.instructure.com/"
+    "https://example.com/"
   ],
   "check_interval": 5,
   "output_dir": "web_analys/output",
