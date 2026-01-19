@@ -5,6 +5,6 @@
   "check_interval": 5,
   "output_dir": "web_analys/output",
   "chrome_debug_port": 9222,
-  "chrome_user_data_dir": "/tmp/chrome-debug-profile"
+  "chrome_user_data_dir": "/tmp/chrome-debug-profile",
+  "cleanup_on_exit": true
 }
-

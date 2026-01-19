@@ -1,6 +1,5 @@
 """
-日志模块
-负责将日志输出到文件和控制台
+日志工具函数
 """
 import logging
 import sys

@@ -12,7 +12,7 @@ import requests
 
 class ElementClicker:
     """元素点击器"""
-    
+    #初始化应该包含元素 而不是方法调用再从外部传入
     def __init__(self, cdp_url: str = "http://localhost:9222"):
         """
         初始化点击器

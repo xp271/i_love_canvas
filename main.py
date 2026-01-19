@@ -4,43 +4,18 @@
 import asyncio
 import argparse
 import sys
-import shutil
 from pathlib import Path
 
-# 添加 web_analys 目录到路径
-sys.path.insert(0, str(Path(__file__).parent / "web_analys"))
+# 添加 Web_analys 目录到路径
+sys.path.insert(0, str(Path(__file__).parent / "Web_analys"))
 # 添加 Classes 目录到路径
 sys.path.insert(0, str(Path(__file__).parent / "Classes"))
+# 添加 utils 目录到路径
+sys.path.insert(0, str(Path(__file__).parent / "utils"))
 from grab import WebMonitor
 from grab.page_capture import PageCapture
-from grab.logger import setup_logger
-from element_clicker_loop import ElementClickerLoop
-
-
-def cleanup_output_dir(output_dir: str, logger):
-    """
-    清理输出目录
-    
-    Args:
-        output_dir: 输出目录路径
-        logger: 日志记录器
-    """
-    try:
-        output_path = Path(output_dir)
-        if output_path.exists() and output_path.is_dir():
-            # 删除目录中的所有文件
-            for item in output_path.iterdir():
-                if item.is_file():
-                    item.unlink()
-                    logger.info(f"已删除文件: {item.name}")
-                elif item.is_dir():
-                    shutil.rmtree(item)
-                    logger.info(f"已删除目录: {item.name}")
-            logger.info(f"✅ 已清理输出目录: {output_dir}")
-        else:
-            logger.info(f"输出目录不存在，无需清理: {output_dir}")
-    except Exception as e:
-        logger.error(f"清理输出目录时出错: {str(e)}")
+from courses_entrance import CoursesEntrance
+from utils import setup_logger, cleanup_output_dir
 
 
 def main():
@@ -76,16 +51,17 @@ def main():
         
         if elements_file:
             # 创建点击器并循环点击所有元素
-            clicker = ElementClickerLoop(monitor.config)
+            clicker = CoursesEntrance(monitor.config)
             clicker.logger = logger  # 将 logger 传递给 clicker
             asyncio.run(clicker.run(elements_file))
     else:
         logger.warning("未找到保存的 HTML 文件")
     
-    # 程序结束前清理输出目录
+    # 程序结束前清理输出目录（根据配置决定是否清理）
     output_dir = monitor.config.get('output_dir', 'web_analys/output')
+    cleanup_on_exit = monitor.config.get('cleanup_on_exit', True)
     logger.info("\n正在清理输出目录...")
-    cleanup_output_dir(output_dir, logger)
+    cleanup_output_dir(output_dir, logger, cleanup_on_exit)
 
 
 if __name__ == "__main__":

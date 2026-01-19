@@ -8,8 +8,14 @@ import logging
 from pathlib import Path
 from datetime import datetime
 from playwright.async_api import async_playwright
-from bs4 import BeautifulSoup
 import requests
+import sys
+
+# 添加 utils 目录到路径
+utils_path = Path(__file__).parent.parent.parent.parent / "utils"
+sys.path.insert(0, str(utils_path))
+from url_utils import is_target_url, url_to_folder_name
+from html_utils import extract_hero_elements as extract_hero_elements_util
 
 
 class PageCapture:
@@ -28,13 +34,7 @@ class PageCapture:
     
     def is_target_url(self, url: str, target_urls: list):
         """检查 URL 是否为目标 URL"""
-        if not target_urls:
-            return False
-        
-        for target in target_urls:
-            if target in url or url in target:
-                return True
-        return False
+        return is_target_url(url, target_urls)
     
     def extract_hero_elements(self, html_content: str):
         """
@@ -46,34 +46,7 @@ class PageCapture:
         Returns:
             list: 包含元素信息的列表，每个元素是一个字典
         """
-        hero_elements = []
-        try:
-            soup = BeautifulSoup(html_content, 'html.parser')
-            # 查找所有包含 DashboardCard__header_hero 类的元素（不区分大小写）
-            elements = soup.find_all(class_=lambda x: x and 'DashboardCard__header_hero' in ' '.join(x) if isinstance(x, list) else 'DashboardCard__header_hero' in str(x))
-            
-            for element in elements:
-                element_info = {
-                    'tag': element.name,
-                    'class': element.get('class', []),
-                    'style': element.get('style', ''),
-                    'html': str(element),
-                    'text': element.get_text(strip=True)
-                }
-                # 提取背景颜色（如果有）
-                style = element.get('style', '')
-                if 'background-color' in style:
-                    # 尝试提取 rgb 值
-                    import re
-                    bg_match = re.search(r'background-color:\s*([^;]+)', style)
-                    if bg_match:
-                        element_info['background_color'] = bg_match.group(1).strip()
-                
-                hero_elements.append(element_info)
-        except Exception as e:
-            self.logger.error(f"⚠️  提取 hero 元素时出错: {str(e)}")
-        
-        return hero_elements
+        return extract_hero_elements_util(html_content, self.logger)
     
     def extract_and_save_hero_elements(self, html_file: str):
         """
@@ -105,11 +78,9 @@ class PageCapture:
         
         self.logger.info(f"✅ 提取到 {len(hero_elements)} 个 DashboardCard__header_hero 元素")
         
-        # 保存所有元素到 JSON 文件
-        output_dir = Path(self.config.get('output_dir', 'output'))
-        output_dir.mkdir(parents=True, exist_ok=True)
-        
-        elements_file = output_dir / "hero_elements.json"
+        # 保存所有元素到 JSON 文件（保存到与 HTML 文件相同的目录）
+        html_path = Path(html_file)
+        elements_file = html_path.parent / "hero_elements.json"
         with open(elements_file, 'w', encoding='utf-8') as f:
             json.dump(hero_elements, f, indent=2, ensure_ascii=False)
         self.logger.info(f"✅ 所有元素已保存到: {elements_file}")
@@ -130,13 +101,15 @@ class PageCapture:
         """
         # 生成文件名
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        safe_url = url.replace("://", "_").replace("/", "_").replace(":", "_")[:50]
         
+        # 根据 URL 创建子文件夹
+        folder_name = url_to_folder_name(url)
         output_dir = Path(self.config.get('output_dir', 'output'))
-        output_dir.mkdir(parents=True, exist_ok=True)
+        url_dir = output_dir / folder_name
+        url_dir.mkdir(parents=True, exist_ok=True)
         
-        html_file = output_dir / f"{safe_url}_{timestamp}.html"
-        screenshot_file = output_dir / f"{safe_url}_{timestamp}.png"
+        html_file = url_dir / f"{timestamp}.html"
+        screenshot_file = url_dir / f"{timestamp}.png"
         
         try:
             # 等待页面加载
