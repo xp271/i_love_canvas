@@ -1,85 +1,116 @@
 """
 URL 工具函数
+提供 URL 处理、匹配和转换的工具函数
 """
-from urllib.parse import urlparse
 import re
+from urllib.parse import urlparse, urlunparse
+from typing import List, Union
 
 
-def is_target_url(url: str, target_urls: list):
+def is_target_url(url: str, target_urls: Union[str, List[str]]) -> bool:
     """
-    检查 URL 是否为目标 URL
+    检查 URL 是否匹配目标 URL 列表
     
     Args:
         url: 要检查的 URL
-        target_urls: 目标 URL 列表
-    
+        target_urls: 目标 URL 或目标 URL 列表
+        
     Returns:
-        bool: 如果 URL 匹配目标 URL 列表中的任何一个，返回 True
+        bool: 如果 URL 匹配目标 URL，返回 True，否则返回 False
     """
-    if not target_urls:
+    if not url or not target_urls:
         return False
     
-    for target in target_urls:
-        if target in url or url in target:
-            return True
+    # 将单个字符串转换为列表
+    if isinstance(target_urls, str):
+        target_urls = [target_urls]
+    
+    # 解析目标 URL
+    parsed_url = urlparse(url)
+    
+    for target_url in target_urls:
+        if not target_url:
+            continue
+        
+        parsed_target = urlparse(target_url)
+        
+        # 比较域名和路径
+        # 如果目标 URL 是根路径，匹配所有该域名的页面
+        if parsed_target.path == '/' or parsed_target.path == '':
+            if parsed_url.netloc == parsed_target.netloc:
+                return True
+        # 否则检查 URL 是否以目标 URL 开头
+        else:
+            # 检查域名是否相同
+            if parsed_url.netloc != parsed_target.netloc:
+                continue
+            
+            # 检查路径是否以目标路径开头
+            target_path = parsed_target.path.rstrip('/')
+            url_path = parsed_url.path.rstrip('/')
+            
+            if url_path.startswith(target_path):
+                return True
+    
     return False
 
 
-def url_to_folder_name(url: str, max_length: int = 100):
+def url_to_folder_name(url: str, max_length: int = 100) -> str:
     """
-    将 URL 转换为安全的文件夹名称
+    从 URL 中提取文件夹名称
     
     Args:
         url: 要转换的 URL
         max_length: 最大长度限制
-    
+        
     Returns:
-        str: 安全的文件夹名称
+        str: 文件夹名称
     """
     try:
         parsed = urlparse(url)
-        # 组合域名和路径
+        
+        # 使用域名和路径作为文件夹名
+        folder_parts = []
+        
+        # 添加域名
         if parsed.netloc:
-            folder_name = parsed.netloc
-            if parsed.path and parsed.path != '/':
-                # 添加路径部分，但限制长度
-                path_part = parsed.path.strip('/').replace('/', '_')
-                folder_name = f"{folder_name}_{path_part}"
+            # 移除 www. 前缀
+            netloc = parsed.netloc.replace('www.', '')
+            folder_parts.append(netloc)
+        
+        # 添加路径的主要部分（如果有）
+        if parsed.path and parsed.path != '/':
+            path_parts = [p for p in parsed.path.strip('/').split('/') if p]
+            if path_parts:
+                # 只使用路径的前几个部分，避免太长
+                folder_parts.extend(path_parts[:2])
+        
+        if folder_parts:
+            folder_name = '_'.join(folder_parts)
         else:
-            # 如果没有域名，使用整个 URL
-            folder_name = url
+            folder_name = 'page'
         
-        # 移除协议前缀（如果存在）
-        folder_name = folder_name.replace('https://', '').replace('http://', '')
-        
-        # 替换不安全的字符
-        folder_name = re.sub(r'[<>:"|?*\x00-\x1f]', '_', folder_name)
+        # 清理非法字符
+        folder_name = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', folder_name)
         
         # 限制长度
         if len(folder_name) > max_length:
             folder_name = folder_name[:max_length]
         
-        # 移除末尾的点或空格
-        folder_name = folder_name.rstrip('. ')
+        return folder_name.rstrip('_')
         
-        return folder_name if folder_name else 'unknown'
     except Exception:
-        # 如果解析失败，使用简单的替换方法
-        safe_name = url.replace("://", "_").replace("/", "_").replace(":", "_")
-        safe_name = re.sub(r'[<>:"|?*\x00-\x1f]', '_', safe_name)
-        if len(safe_name) > max_length:
-            safe_name = safe_name[:max_length]
-        return safe_name if safe_name else 'unknown'
+        return 'page'
 
 
-def url_to_subfolder_name(url: str, max_length: int = 50):
+def url_to_subfolder_name(url: str, max_length: int = 50) -> str:
     """
-    从 URL 中提取路径的最后一部分作为子文件夹名称
+    从 URL 中提取子文件夹名称
     
     Args:
         url: 要转换的 URL
         max_length: 最大长度限制
-    
+        
     Returns:
         str: 子文件夹名称
     """
@@ -115,10 +146,10 @@ def url_to_subfolder_name(url: str, max_length: int = 50):
                     subfolder = path_parts[-1]
                 
                 # 清理和限制长度
-                subfolder = re.sub(r'[<>:"|?*\x00-\x1f]', '_', subfolder)
+                subfolder = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '_', subfolder)
                 if len(subfolder) > max_length:
                     subfolder = subfolder[:max_length]
-                return subfolder.rstrip('. ')
+                return subfolder.rstrip('_ ')
         
         # 如果没有路径，返回默认名称
         return 'page'

@@ -4,7 +4,15 @@
   ],
   "check_interval": 5,
   "output_dir": "web_analys/output",
+  "clean_output_on_start": true,
+  "browser_type": "chrome",
+  "chrome_path": null,
   "chrome_debug_port": 9222,
   "chrome_user_data_dir": "/tmp/chrome-debug-profile",
-  "cleanup_on_exit": true
+  "edge_path": null,
+  "edge_debug_port": 9223,
+  "edge_user_data_dir": "/tmp/edge-debug-profile",
+  "browser_startup_wait": 3,
+  "page_load_wait": 2,
+  "redirect_timeout": 30000
 }

@@ -1,10 +1,9 @@
 """
 网页抓取模块
 """
-from .monitor import WebMonitor
-from .chrome_manager import ChromeManager
-from .page_capture import PageCapture
-from .assignment_extractor import AssignmentExtractor
+from .course_url_extractor import CourseURLExtractor
+from .course_assignments_capture import CourseAssignmentsCapture
+from .assignment_detail_capture import AssignmentDetailCapture
 
-__all__ = ['WebMonitor', 'ChromeManager', 'PageCapture', 'AssignmentExtractor']
+__all__ = ['CourseURLExtractor', 'CourseAssignmentsCapture', 'AssignmentDetailCapture']
 
